@@ -62,6 +62,7 @@ cover:
     api_key: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
     mac: 'xx:xx:xx:xx:xx:xx'
     name: 'Curtain of Living'
+    reverse: false
 ```
 
 * `platform` (Required) - It must be `mornin`.
@@ -71,6 +72,8 @@ cover:
 * `mac` (Required) - MAC address of your mornin+.
 
 * `name` (Optional) - Name of your mornin+. In typically it should be name of curtain.
+
+* `reverse` (Optional) - Flag to reverse the direction to open the curtain. The default value is `false`, open to left and close to right.
 
 ### 4. Restart Home Assistant
 

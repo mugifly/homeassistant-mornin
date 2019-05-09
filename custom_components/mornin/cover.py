@@ -20,16 +20,6 @@ import homeassistant.helpers.config_validation as cv
 # Import the logger for debugging
 import logging
 
-# Define the validation of configuration
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_API_KEY): cv.string,
-    vol.Required(CONF_MAC): cv.string,
-    vol.Optional(CONF_NAME): cv.string
-})
-
-# Initialize the logger
-_LOGGER = logging.getLogger(__name__)
-
 # Define constants
 BLE_CONNECT_TIMEOUT_SEC = 15
 BLE_CONNECT_MAX_RETRY_COUNT = 5
@@ -40,6 +30,18 @@ CONTROL_SERVICE_CONTROL_OPEN_VALUE = b'\x00\x00'
 CONTROL_SERVICE_CONTROL_CLOSE_VALUE = b'\x00\x01'
 CONTROL_SERVICE_CONTROL_STOP_VALUE = b'\x00\x02'
 CONTROL_SERVICE_CONTROL_WAIT_SEC = 5
+CONF_REVERSE = 'reverse'
+
+# Define the validation of configuration
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
+    vol.Required(CONF_API_KEY): cv.string,
+    vol.Required(CONF_MAC): cv.string,
+    vol.Optional(CONF_NAME): cv.string,
+    vol.Optional(CONF_REVERSE, default = False): cv.boolean
+})
+
+# Initialize the logger
+_LOGGER = logging.getLogger(__name__)
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Setup platform."""
@@ -48,12 +50,13 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     mac_address = config[CONF_MAC]
 
     name = config.get(CONF_NAME)
+    reverse = config.get(CONF_REVERSE)
 
-    add_devices([MorninCoverDevice(auth_key, mac_address, name)])
+    add_devices([MorninCoverDevice(auth_key, mac_address, name, reverse)])
 
 class MorninCoverDevice(CoverDevice):
 
-    def __init__(self, auth_key: str, mac_address: str, name: str) -> None:
+    def __init__(self, auth_key: str, mac_address: str, name: str, reverse: bool) -> None:
         """Initialzing device...."""
 
         # Import dependencies
@@ -66,6 +69,7 @@ class MorninCoverDevice(CoverDevice):
         self._auth_key = auth_key
         self._mac_address = mac_address.upper()
         self._name = name if name != None else mac_address
+        self._reverse = reverse
         self._mornin_device = None
         self._state = None
 
@@ -145,7 +149,10 @@ class MorninCoverDevice(CoverDevice):
 
         # Control device
         _LOGGER.info('Moving the mornin to open the curtain %s...', self._mac_address)
-        self._mornin_device.char_write(CONTROL_SERVICE_CONTROL_UUID, CONTROL_SERVICE_CONTROL_OPEN_VALUE, True)
+        if (self._reverse):
+            self._mornin_device.char_write(CONTROL_SERVICE_CONTROL_UUID, CONTROL_SERVICE_CONTROL_CLOSE_VALUE, True)
+        else:
+            self._mornin_device.char_write(CONTROL_SERVICE_CONTROL_UUID, CONTROL_SERVICE_CONTROL_OPEN_VALUE, True)
         self._sleep(CONTROL_SERVICE_CONTROL_WAIT_SEC)
 
         # Change the state on Home Assistant
@@ -164,7 +171,10 @@ class MorninCoverDevice(CoverDevice):
 
         # Control the device
         _LOGGER.info('Moving the mornin to close the curtain %s...', self._mac_address)
-        self._mornin_device.char_write(CONTROL_SERVICE_CONTROL_UUID, CONTROL_SERVICE_CONTROL_CLOSE_VALUE, True)
+        if (self._reverse):
+            self._mornin_device.char_write(CONTROL_SERVICE_CONTROL_UUID, CONTROL_SERVICE_CONTROL_OPEN_VALUE, True)
+        else:
+            self._mornin_device.char_write(CONTROL_SERVICE_CONTROL_UUID, CONTROL_SERVICE_CONTROL_CLOSE_VALUE, True)
         self._sleep(CONTROL_SERVICE_CONTROL_WAIT_SEC)
 
         # Change the state on Home Assistant
@@ -253,7 +263,7 @@ class MorninCoverDevice(CoverDevice):
 
         _LOGGER.debug('Receiving status from mornin %s...', self._mac_address)
         app_service_status = self._mornin_device.char_read(APP_SERVICE_STATUS_UUID, BLE_READ_TIMEOUT_SEC)
-        _LOGGER.debug('Status received from mornin %s: ', self._mac_address, app_service_status)
+        _LOGGER.debug('Status received from mornin %s: %s', self._mac_address, app_service_status)
 
         _LOGGER.debug('Generating seed for %s... %s', self._mac_address)
         seeds = self._get_seeds_by_app_service_status(app_service_status)
