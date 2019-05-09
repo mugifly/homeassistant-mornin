@@ -16,7 +16,7 @@ It supports `cover` component and can be used to open / close the curtain on you
 
 * This software has some limitations and is unstable, because it published under the TESTING phase.
 
-    * I tested on Hass.io 0.92.2.
+    * I tested on Hass.io 0.92.2 + Raspberry Pi 3 Model B or Raspberry Pi Zero W.
 
     * In currently, this software only supports mornin'+ (mornin plus).
 
