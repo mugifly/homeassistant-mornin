@@ -1,1 +1,1 @@
-"""The mornin component v1.0.0."""
+"""The mornin component v1.1.0."""
